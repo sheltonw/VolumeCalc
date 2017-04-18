@@ -1,0 +1,30 @@
+{% extends "arcgis/base.html" %}
+
+{% block app_content %}
+  <h1>The Volume of the Big Butte</h1>
+<h4>By: Hani Abu-Hmeidan and William Shelton</h4>
+  <p>This is a project for our Geospatial Software Development class (CEen 514) at Brigham Young University.  For this project we created a Tethys App that allows the user to import an Elevation to compute the volume of material to be removed and display a polygon representing the area of interest.</p>
+
+<h3>Our task:</h3>
+<p>1. Create a Geoprocessing tool that calculates the Volume of the Big Butte.</p>
+<p>2. Link the tool to the BYU Geoserver.</p>
+<p>3. Excute the tool and display results on the Map.</p>
+
+<h3>How to use the map:</h3>
+<p>1. Insert an Elevation in the textbox. The MINIMUM elevation is 1666 feet.</p>
+<p>2. Click on "RUN".</p>
+<p>3. Wait for the tool to run and the volume will be displayed.</p>
+
+
+<br>
+<p><a onclick="window.open('https://docs.google.com/document/d/11RlHGMUKreOIDHaVZvxMBzWuPKanCiCL_qtdQhHGA7I/edit?usp=sharing')" >Technical Documentation</a></p>
+<p><a onclick="window.open('https://docs.google.com/document/d/1jjng6SIpAwvBBanO94edloE0Hc_y946AhowIkTkdDvM/edit?usp=sharing')" >Help File</a></p>
+{% endblock %}
+
+
+{% block app_actions %}
+  <a href="" class="btn btn-default">Go To Map</a>
+{% endblock %}
+
+  
+

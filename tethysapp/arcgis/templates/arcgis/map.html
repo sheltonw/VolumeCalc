@@ -1,0 +1,135 @@
+{% extends "arcgis/base.html" %}
+
+
+{% load tethys_gizmos %}
+
+{% block meta %}
+  {{ block.super }}
+
+
+{% endblock %}
+
+{% block styles %}
+  {{ block.super }}
+
+    <link rel="stylesheet" href="https://js.arcgis.com/3.20/esri/css/esri.css">
+   
+{% endblock %}
+    
+   
+    
+
+{% block global_scripts %}
+  {{ block.super }}
+<script src="https://js.arcgis.com/3.20/"></script>
+
+<script>
+
+var app;
+var FinalVolume;
+
+require(["esri/Color",
+              "esri/layers/ArcGISDynamicMapServiceLayer",
+              "esri/layers/ArcGISTiledMapServiceLayer",
+              "esri/map",
+              "esri/graphic",
+              "esri/graphicsUtils",
+              "esri/tasks/Geoprocessor",
+              "esri/tasks/FeatureSet",
+              "esri/tasks/LinearUnit",
+              "esri/symbols/SimpleMarkerSymbol",
+              "esri/symbols/SimpleLineSymbol",
+              "esri/symbols/SimpleFillSymbol"
+              ],
+
+        function(Color, ArcGISDynamicMapServiceLayer, ArcGISTiledMapServiceLayer, Map, Graphic, graphicsUtils, Geoprocessor, FeatureSet, LinearUnit, SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol){
+
+            var map, gp;
+            var featureSet = new FeatureSet();
+
+            map = new Map("mapDiv", {
+              basemap: "streets",
+              center: [-114.742043, 44.068203],
+              zoom: 5
+            });
+
+
+            gp = new Geoprocessor("http://geoserver.byu.edu:6080/arcgis/rest/services/William_Shelton/VolumeCalc/GPServer/VolumeCalc");
+            gp.setOutputSpatialReference({
+              wkid: 102100
+            });           
+
+          function run_service(){
+            
+            var elev = document.getElementById("elev").value;
+            document.getElementById("programStatus").innerHTML = "";
+            if (elev == "" || elev <= 1666){
+              document.getElementById("programStatus").innerHTML = "You must enter a value greater than 1666";
+            } else {
+              document.getElementById("programStatus").innerHTML = "Running...";
+              var params = {
+                "BaseContour": elev
+               };
+              gp.submitJob(params, completeCallback, statusCallback);
+            }
+          }       
+
+          function statusCallback(jobInfo) {
+            console.log(jobInfo.jobStatus);
+            if (jobInfo.jobStatus === "esriJobSubmitted") {
+              $("#volstatus").html("<h7 style='color:blue'><b>Job submitted...</b></h7>");
+            } else if (jobInfo.jobStatus === "esriJobExecuting") {
+                $("#volstatus").html("<h7 style='color:red;'><b>Calculating...</b></h7>");
+            } else if (jobInfo.jobStatus === "esriJobSucceeded") {
+                $("#volstatus").html("<h7 style='color:green;'><b>Succeed!</b></h7>");
+            }
+          }
+
+          function completeCallback(jobInfo) {
+            console.log("getting data");
+            gp.getResultData(jobInfo.jobId, "ButtePoly_shp", displayPolygon);
+            gp.getResultData(jobInfo.jobId, "FinalVolume", displayFinalVolume);
+          }
+
+          function displayPolygon(result, messages) {
+            map.graphics.clear();
+            var polySymbol = new SimpleFillSymbol();
+            polySymbol.setOutline(new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([0, 0, 0, 0.5]), 1));
+            polySymbol.setColor(new Color([255, 127, 0, 0.7]));
+            var features = result.value.features;
+            for (var f = 0, fl = features.length; f < fl; f++) {
+                var feature = features[f];
+                feature.setSymbol(polySymbol);
+                map.graphics.add(feature);
+            }
+            map.setExtent(graphicsUtils.graphicsExtent(map.graphics.graphics), true);
+          }
+
+          function displayFinalVolume(result, messages) {
+            document.getElementById("programStatus").innerHTML = "Finished: Final Volume = " + result.value.features[0].attributes.SUM.toFixed(3) + " km^3";
+          }
+
+          //adds public functions to variable app
+          app = {run_service: run_service};
+    });
+
+
+</script>
+  
+{% endblock %}
+
+  {% block app_content %}
+
+  <input type="text" id="elev" value=""/>
+  <input type="button" value="RUN" onclick="app.run_service()"/>
+  <span id="programStatus"></span>
+
+  <div id="mapDiv"></div>
+  
+{% endblock %}
+
+
+{% block app_actions %}
+  <a href="{% url 'arcgis:home' %}" class="btn btn-default">Home</a>
+{% endblock %}  
+

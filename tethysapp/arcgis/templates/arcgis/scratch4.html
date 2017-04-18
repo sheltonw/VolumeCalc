@@ -1,0 +1,156 @@
+{% extends "arcgis/base.html" %}
+
+{% block meta %}
+  {{ block.super }}
+<!--     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width,user-scalable=no">
+    
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no"> -->
+{% endblock %}
+
+{% block styles %}
+  {{ block.super }}
+
+    <link rel="stylesheet" href="https://js.arcgis.com/3.20/esri/css/esri.css">
+   
+{% endblock %}
+    
+   
+    
+
+{% block global_scripts %}
+  {{ block.super }}
+<script src="https://js.arcgis.com/3.20/"></script>
+
+<script>
+
+var app;
+var FinalVolume;
+
+require(["esri/Color",
+              "esri/layers/ArcGISDynamicMapServiceLayer",
+              "esri/layers/ArcGISTiledMapServiceLayer",
+              "esri/map",
+              "esri/graphic",
+              "esri/graphicsUtils",
+              "esri/tasks/Geoprocessor",
+              "esri/tasks/FeatureSet",
+              "esri/tasks/LinearUnit",
+              "esri/symbols/SimpleMarkerSymbol",
+              "esri/symbols/SimpleLineSymbol",
+              "esri/symbols/SimpleFillSymbol"
+              ],
+
+        function(Color, ArcGISDynamicMapServiceLayer, ArcGISTiledMapServiceLayer, Map, Graphic, graphicsUtils, Geoprocessor, FeatureSet, LinearUnit, SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol){
+
+            var map, gp;
+            var featureSet = new FeatureSet();
+
+            map = new Map("mapDiv", {
+              basemap: "streets",
+              center: [-114.742043, 44.068203],
+              zoom: 5
+            });
+
+
+            gp = new Geoprocessor("http://geoserver.byu.edu:6080/arcgis/rest/services/William_Shelton/VolumeCalc/GPServer/VolumeCalc");
+            gp.setOutputSpatialReference({
+              wkid: 102100
+            });           
+
+          function run_service(){
+            
+            var elev = document.getElementById("elev").value;
+            //document.getElementById("programStatus").innerHTML = "";
+            if (elev == "" || elev < 1660){
+              //document.getElementById("programStatus").innerHTML = "You must enter a value >= 1660";
+            } else {
+              //document.getElementById("programStatus").innerHTML = "Running...";
+              var params = {
+                "BaseContour": elev
+               };
+              gp.submitJob(params, completeCallback, statusCallback);
+            }
+          }       
+
+          function statusCallback(jobInfo) {
+            console.log(jobInfo.jobStatus);
+            if (jobInfo.jobStatus === "esriJobSubmitted") {
+              $("#volstatus").html("<h7 style='color:blue'><b>Job submitted...</b></h7>");
+            } else if (jobInfo.jobStatus === "esriJobExecuting") {
+                $("#volstatus").html("<h7 style='color:red;'><b>Calculating...</b></h7>");
+            } else if (jobInfo.jobStatus === "esriJobSucceeded") {
+                $("#volstatus").html("<h7 style='color:green;'><b>Succeed!</b></h7>");
+            }
+          }
+
+          function completeCallback(jobInfo) {
+            console.log("getting data");
+            gp.getResultData(jobInfo.jobId, "ButtePoly_shp", displayWatershed);
+            gp.getResultData(jobInfo.jobId, "FinalVolume", displayFinalVolume);
+            //document.getElementById("programStatus").innerHTML = "Finished";
+          }
+
+          function displayWatershed(result, messages) {
+              map.graphics.clear();
+              var polySymbol = new SimpleFillSymbol();
+              polySymbol.setOutline(new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([0, 0, 0, 0.5]), 1));
+              polySymbol.setColor(new Color([255, 127, 0, 0.7]));
+              var features = result.value.features;
+              for (var f = 0, fl = features.length; f < fl; f++) {
+                  var feature = features[f];
+                  feature.setSymbol(polySymbol);
+                  map.graphics.add(feature);
+              }
+              map.setExtent(graphicsUtils.graphicsExtent(map.graphics.graphics), true);
+          }
+
+           function displayFinalVolume(result, messages) {
+              result.value.features[0].attributes.SUM
+              //document.getElementById("programStatus").innerHTML = "Finished: Final Volume"
+          }
+
+          //adds public functions to variable app
+          app = {run_service: run_service};
+    });
+
+
+
+
+
+
+
+</script>
+  
+{% endblock %}
+
+  {% block app_content %}
+
+<!--   <div id="mainWindow" data-dojo-type="dijit/layout/BorderContainer" data-dojo-props="design:'headline'">
+    <div id="header" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'top'">
+      <span>Draw:<br /></span>
+      <button data-dojo-type="dijit/form/Button">Point</button>
+      <button data-dojo-type="dijit/form/Button">Multi Point</button>
+      <button data-dojo-type="dijit/form/Button">Line</button>
+      <button data-dojo-type="dijit/form/Button">Polyline</button>
+      <button data-dojo-type="dijit/form/Button">Polygon</button>
+      <button data-dojo-type="dijit/form/Button">Freehand Polyline</button>
+      <button data-dojo-type="dijit/form/Button">Freehand Polygon</button>
+      
+      <button data-dojo-type="dijit/form/Button">Arrow</button>
+      <button data-dojo-type="dijit/form/Button">Triangle</button>
+      <button data-dojo-type="dijit/form/Button">Circle</button>
+      <button data-dojo-type="dijit/form/Button">Ellipse</button>
+    </div>
+    <div id="map" data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'"></div>
+  </div> -->
+  <input type="text" id="elev" value="1700"/>
+  <input type="button" value="RUN" onclick="app.run_service()"/>
+<!--   <span id="programStatus"></span>
+ -->
+  <div id="mapDiv"></div>
+{% endblock %}
+
+
+  
+
